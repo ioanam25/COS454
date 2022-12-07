@@ -9,51 +9,78 @@ import os
 import pandas as pd
 from torch.utils.data import Dataset, DataLoader
 
-class Preprocessing():
-    def get_image_tensors_array(self):
-        labels = pd.read_csv("labels.csv")
-        X = []
-        y = []
-        directory = "images"
-        for filename in os.listdir(directory):
-            f = os.path.join(directory, filename)
-            # checking if it is a file
-            if os.path.isfile(f):
-                image = Image.open(f)
-                transform = transforms.Compose([
-                    transforms.PILToTensor()
-                ])
-                img_tensor = transform(image)
-                X.append(img_tensor)
-                y.append(labels[f])
+label_to_index = {
+    "red circle": 0,
+    "red square": 1,
+    "red triangle": 2,
+    "red star": 3,
+    "yellow circle": 4,
+    "yellow square": 5,
+    "yellow triangle": 6,
+    "yellow star": 7,
+    "green circle": 8,
+    "green square": 9,
+    "green triangle": 10,
+    "green star": 11,
+    "blue circle": 12,
+    "blue square": 13,
+    "blue triangle": 14,
+    "blue star": 15,
+}
+def get_image_tensors_array():
+    labels = pd.read_csv("labels.csv")
+    X = []
+    y = []
+    directory = "images"
+    for filename in os.listdir(directory):
+        f = os.path.join(directory, filename)
+        # checking if it is a file
+        if os.path.isfile(f):
+            image = Image.open(f)
+            transform = transforms.Compose([
+                transforms.PILToTensor()
+            ])
+            img_tensor = transform(image)
+            X.append(img_tensor)
+            tag = str(labels[f][0])
+            tags = tag.split("'")
+            y.append([tags[1], tags[3]])
 
-        return X, y
+    return X, y
 
-    def train_test_split(self):
-        X, y = self.get_image_tensors_array()
-        train_idx = []
-        test_idx = []
-        for index, image in enumerate(X):
-            if y[index][0] in ["green", "yellow"] and y[index][1] in ["triangle", "star"]:
-                test_idx.append(index)
-            else:
-                train_idx.append(index)
 
-        X_train = []
-        y_train = []
-        X_test = []
-        y_test = []
-        for i in range(train_idx):
-            X_train.append(X[train_idx[i]])
-            y_train.append(y[train_idx[i]])
+def train_test_split():
+    X, y = get_image_tensors_array()
+    train_idx = []
+    test_idx = []
+    for index, image in enumerate(X):
+        if y[index][0] in ["green", "yellow"] and y[index][1] in ["triangle", "star"]:
+            test_idx.append(index)
+        else:
+            train_idx.append(index)
 
-        for i in range(test_idx):
-            X_test.append(X[test_idx[i]])
-            y_test.append(y[test_idx[i]])
+    X_train = []
+    y_train = []
+    X_test = []
+    y_test = []
+    for i in range(len(train_idx)):
+        X_train.append(X[train_idx[i]])
+        y_train.append(label_to_index[y[train_idx[i]][0] + " " + y[train_idx[i]][1]])
 
-        return np.array(X_train), np.array(y_train), np.array(X_test), np.array(y_test)
+    for i in range(len(test_idx)):
+        X_test.append(X[test_idx[i]])
+        y_test.append(label_to_index[y[test_idx[i]][0] + " " + y[test_idx[i]][1]])
 
-class CustomDataset(Dataset):
+    print(X_train[0].shape)
+    print(len(X_train))
+    print(len(X_test))
+    print(torch.stack(X_train).shape)
+    X_train = torch.stack(X_train)
+    X_test = torch.stack(X_test)
+    return X_train, y_train, X_test, y_test
+
+
+class Dataset(torch.utils.data.Dataset):
     def __init__(self, inputs, labels):
         self.inputs = inputs
         self.labels = labels
@@ -64,18 +91,15 @@ class CustomDataset(Dataset):
     def __getitem__(self, idx):
         input = self.input[idx]
         label = self.labels[idx]
-        sample = {"Image": input, "Labels": label}
-        return sample
+
+        return input, label
 
 
-dataset = Preprocessing.train_test_split()
-training_set = dataset[0], dataset[1]
-test_set = dataset[2], dataset[3]
-image_labels_df_train = pd.DataFrame({'Image': training_set[0], 'Labels': training_set[1]})
-image_labels_df_test = pd.DataFrame({'Image': test_set[0], 'Labels': test_set[1]})
+dataset = train_test_split()
+training = dataset[0], dataset[1] # X_train y_train
+test = dataset[2], dataset[3] # X_test y_test
+training_set = Dataset(dataset[0], dataset[1])
 
-# define data set object
-training_data = CustomDataset(image_labels_df_train['Image'], image_labels_df_train['Labels'])
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
@@ -113,15 +137,16 @@ class Train():
         writer = SummaryWriter('runs/fashion_trainer_{}'.format(timestamp))
         epoch_number = 0
 
-        # TODO EPOCHS = ???
+        # TODO
+        EPOCHS = 5
         loss_fn = torch.nn.CrossEntropyLoss()
         optimizer = torch.optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
 
-        training_loader = torch.utils.data.DataLoader(training_data, batch_size=20, shuffle=True, num_workers=2) # TODO choose batch size
+        training_loader = torch.utils.data.DataLoader(training_set, batch_size=20, shuffle=True, num_workers=2) # TODO choose batch size
 
         for epoch in range(EPOCHS):
             print('EPOCH {}:'.format(epoch_number + 1))
-            running_loss = 0.
+            running_loss = 0
 
             for i, data in enumerate(training_loader):
                 # Every data instance is an input + label pair
@@ -135,8 +160,8 @@ class Train():
 
                 # Gather data and report
                 running_loss += loss.item()
-                if i % 1000 == 999:
-                    last_loss = running_loss / 1000  # loss per batch TODO check??
+                if i % 20 == 19:
+                    last_loss = running_loss / 20  # loss per batch TODO check??
                     print('  batch {} loss: {}'.format(i + 1, last_loss))
                     x = epoch * len(training_set) + i + 1
                     writer.add_scalar('Loss/train', last_loss, x)
@@ -144,6 +169,6 @@ class Train():
 
 
 if __name__ == '__main__':
-    print_hi('PyCharm')
+    print('PyCharm')
 
 
