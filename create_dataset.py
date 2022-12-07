@@ -1,10 +1,8 @@
-import turtle
-from tkinter import *
+import csv
 import cv2
 import numpy as np
 import random
 import math
-from PIL import Image
 
 shapes = ["circle", "square", "triangle", "star"]
 colors = ["red", "blue", "green", "yellow"]
@@ -134,5 +132,10 @@ for i in range(250):
         image_info[filename] = [color, "star"]
         cv2.imwrite(filename, img)
 
+
+with open('labels.csv', 'w') as f:
+    w = csv.DictWriter(f, image_info.keys())
+    w.writeheader()
+    w.writerow(image_info)
 
 
