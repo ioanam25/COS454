@@ -25,7 +25,7 @@ def get_bgr(color):
 counter = 0
 
 # SQUARE
-for i in range(250):
+for i in range(3750):
     for color in colors:
         counter += 1
         img = np.ones((224, 224, 3), np.uint8)
@@ -47,7 +47,7 @@ for i in range(250):
         cv2.imwrite(filename, img)
 
 # CIRCLE
-for i in range(250):
+for i in range(3750):
     for color in colors:
         counter += 1
         img = np.ones((224, 224, 3), np.uint8)
@@ -78,7 +78,7 @@ def get_third_point(x1, y1, x2, y2):
     return int(xp), int(yp)
 
 
-for i in range(250):
+for i in range(3750):
     for color in colors:
         counter += 1
         img = np.ones((224, 224, 3), np.uint8)
@@ -100,7 +100,7 @@ for i in range(250):
 
 # STARS
 
-for i in range(250):
+for i in range(3750):
     for color in colors:
         counter += 1
         pentagon = []
