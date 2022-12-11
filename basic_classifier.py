@@ -2,7 +2,8 @@ import torch
 import torch.nn as nn
 from PIL import Image
 import torchvision.transforms as transforms
-from pip._internal.utils import datetime
+#from pip._internal.utils import datetime
+from datetime import datetime
 from torch.utils.tensorboard import SummaryWriter
 import numpy as np
 import os
@@ -10,8 +11,21 @@ import pandas as pd
 from torch.utils.data import Dataset, DataLoader
 import preprocess_data
 
+class Flatten(nn.Module):
+    def __init__(self):
+        super(Flatten, self).__init__()
+    
+    def forward(self, x):
+        return x.view(x.size(0), -1)
 
 class BasicNet(nn.Module):
+    def conv_block(self, in_size, out_size):
+        return nn.Sequential(
+            nn.Conv2d(in_size, out_size, 3, padding = 1),
+            nn.BatchNorm2d(out_size),
+            nn.ReLU(),
+            nn.MaxPool2d(2)
+        )
     def __init__(self):
         super(BasicNet, self).__init__()
         self.C = 3  # C: number of channels
@@ -20,8 +34,18 @@ class BasicNet(nn.Module):
         # Let x be image batch: tensor of shape [N, C, H, W]
         # Let encoder be an encoding function with final nonlinearity
         # input must be 224 x 224 for ResNet-18
-        self.encoder = torch.hub.load('pytorch/vision:v0.8.0', 'resnet18', pretrained=False)
-        self.linear = nn.Linear(512, 16)
+        
+        #self.encoder = torch.hub.load('pytorch/vision:v0.8.0', 'resnet18', pretrained=False)
+        self.encoder = nn.Sequential(
+            #self.conv_block(224*224*3, 64*64*3),
+            #self.conv_block(64*64*3, 64*64*3),
+            #self.conv_block(64*64*3, 64*64*3),
+            #self.conv_block(64*64*3, 4096),
+            self.conv_block(3, 3),
+            Flatten()
+        )
+        self.linear = nn.Linear(37632, 16)
+        #self.linear = nn.Linear(1000, 16)
 
     # Forward pass
     def forward(self, x):
@@ -40,6 +64,8 @@ def train_one_epoch(epoch_index, tb_writer, optimizer, loss_fn):
     for i, data in enumerate(training_loader):
         # Every data instance is an input + label pair
         inputs, labels = data
+        inputs = inputs.cuda(non_blocking=True)
+        labels = labels.cuda(non_blocking=True)
 
         # Zero your gradients for every batch!
         optimizer.zero_grad()
@@ -56,8 +82,8 @@ def train_one_epoch(epoch_index, tb_writer, optimizer, loss_fn):
 
         # Gather data and report
         running_loss += loss.item()
-        if i % 1000 == 999:
-            last_loss = running_loss / 1000  # loss per batch
+        if i<=10 or i % 10 == 9:
+            last_loss = running_loss / 10  # loss per batch
             print('  batch {} loss: {}'.format(i + 1, last_loss))
             tb_x = epoch_index * len(training_loader) + i + 1
             tb_writer.add_scalar('Loss/train', last_loss, tb_x)
@@ -72,8 +98,8 @@ def training():
     writer = SummaryWriter('runs/fashion_trainer_{}'.format(timestamp))
     epoch_number = 0
 
-    EPOCHS = 5
-    loss_fn = torch.nn.CrossEntropyLoss()
+    EPOCHS = 1
+    loss_fn = torch.nn.CrossEntropyLoss().cuda(device)
     optimizer = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
 
     best_vloss = 1_000_000.
@@ -91,6 +117,8 @@ def training():
         running_vloss = 0.0
         for i, vdata in enumerate(validation_loader):
             vinputs, vlabels = vdata
+            vinputs = vinputs.cuda(non_blocking=True)
+            vlabels = vlabels.cuda(non_blocking=True)
             voutputs = model(vinputs)
             vloss = loss_fn(voutputs, vlabels)
             running_vloss += vloss
@@ -118,10 +146,16 @@ if __name__ == '__main__':
     model = BasicNet()
     training_set, validation_set, test_set = preprocess_data.train_test_split_basic_classifier()
 
-    training_loader = torch.utils.data.DataLoader(training_set, batch_size=64, shuffle=True, num_workers=0)
-    validation_loader = torch.utils.data.DataLoader(validation_set, batch_size=64, shuffle=True, num_workers=0)
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    print(device)
+    model = nn.DataParallel(model)
+    torch.cuda.set_device(device)
+    model.cuda(device)
 
-    training(training_loader, validation_loader, model)
+    training_loader = torch.utils.data.DataLoader(training_set, batch_size=2, shuffle=True, num_workers=0)
+    validation_loader = torch.utils.data.DataLoader(validation_set, batch_size=2, shuffle=True, num_workers=0)
+
+    training()
 
     PATH = "trained_model_basic_classifier.pt"
     torch.save(model.state_dict(), PATH)

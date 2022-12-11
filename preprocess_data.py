@@ -8,6 +8,7 @@ import numpy as np
 import os
 import pandas as pd
 from torch.utils.data import Dataset, DataLoader
+import torch.utils
 
 label_to_index = {
     "red circle": 0,
@@ -95,6 +96,9 @@ def train_test_split_12class_4class():
 
 def train_test_split_basic_classifier():
     X, y = get_image_tensors_array()
-    dataset = Dataset(X, y)
-    training_set, validation_set, test_set = torch.utils.random_split(dataset, [.7, .1, .2], generator=torch.Generator().manual_seed(42))
+    yy = []
+    for i in range(len(y)):
+        yy.append(label_to_index[y[i][0] + " " + y[i][1]])
+    dataset = Dataset(X, yy)
+    training_set, validation_set, test_set = torch.utils.data.random_split(dataset, [.7, .1, .2], generator=torch.Generator().manual_seed(42))
     return training_set, validation_set, test_set
