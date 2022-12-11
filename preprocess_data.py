@@ -97,3 +97,4 @@ def train_test_split_basic_classifier():
     X, y = get_image_tensors_array()
     dataset = Dataset(X, y)
     training_set, validation_set, test_set = torch.utils.random_split(dataset, [.7, .1, .2], generator=torch.Generator().manual_seed(42))
+    return training_set, validation_set, test_set
