@@ -8,6 +8,7 @@ shapes = ["circle", "square", "triangle", "star"]
 colors = ["red", "blue", "green", "yellow"]
 image_info = {}
 
+N = 250
 
 def get_bgr(color):
     if color == "red":
@@ -25,7 +26,7 @@ def get_bgr(color):
 counter = 0
 
 # SQUARE
-for i in range(3750):
+for i in range(N):
     for color in colors:
         counter += 1
         img = np.ones((224, 224, 3), np.uint8)
@@ -47,7 +48,7 @@ for i in range(3750):
         cv2.imwrite(filename, img)
 
 # CIRCLE
-for i in range(3750):
+for i in range(N):
     for color in colors:
         counter += 1
         img = np.ones((224, 224, 3), np.uint8)
@@ -78,7 +79,7 @@ def get_third_point(x1, y1, x2, y2):
     return int(xp), int(yp)
 
 
-for i in range(3750):
+for i in range(N):
     for color in colors:
         counter += 1
         img = np.ones((224, 224, 3), np.uint8)
@@ -100,7 +101,7 @@ for i in range(3750):
 
 # STARS
 
-for i in range(3750):
+for i in range(N):
     for color in colors:
         counter += 1
         pentagon = []
