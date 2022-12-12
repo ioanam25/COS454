@@ -29,6 +29,7 @@ label_to_index = {
     "blue star": 15,
 }
 
+
 class Dataset(torch.utils.data.Dataset):
     def __init__(self, inputs, labels):
         self.inputs = inputs
@@ -43,6 +44,7 @@ class Dataset(torch.utils.data.Dataset):
 
         return input, label
 
+
 def get_image_tensors_array():
     labels = pd.read_csv("labels.csv")
     X = []
@@ -53,10 +55,6 @@ def get_image_tensors_array():
         # checking if it is a file
         if os.path.isfile(f):
             image = Image.open(f)
-            # transform = transforms.Compose([
-            #     transforms.PILToTensor()
-            # ])
-            # img_tensor = transform(image)
             transform = transforms.ToTensor()
             # Convert the image to PyTorch tensor
             img_tensor = transform(image)
@@ -66,6 +64,7 @@ def get_image_tensors_array():
             y.append([tags[1], tags[3]])
 
     return X, y
+
 
 def train_test_split_12class_4class():
     X, y = get_image_tensors_array()
@@ -77,22 +76,28 @@ def train_test_split_12class_4class():
         else:
             class12_idx.append(index)
 
-    # TODO
-    X_train = []
-    y_train = []
-    X_test = []
-    y_test = []
+    X_class12 = []
+    y_class12 = []
+    X_class4 = []
+    y_class4 = []
     for i in range(len(class12_idx)):
-        X_train.append(X[class12_idx[i]])
-        y_train.append(label_to_index[y[class12_idx[i]][0] + " " + y[class12_idx[i]][1]])
+        X_class12.append(X[class12_idx[i]])
+        y_class12.append(label_to_index[y[class12_idx[i]][0] + " " + y[class12_idx[i]][1]])
 
     for i in range(len(class4_idx)):
-        X_test.append(X[class4_idx[i]])
-        y_test.append(label_to_index[y[class4_idx[i]][0] + " " + y[class4_idx[i]][1]])
+        X_class4.append(X[class4_idx[i]])
+        y_class4.append(label_to_index[y[class4_idx[i]][0] + " " + y[class4_idx[i]][1]])
 
-    X_train = torch.stack(X_train)
-    X_test = torch.stack(X_test)
-    return X_train, y_train, X_test, y_test
+    dataset12 = Dataset(X_class12, y_class12)
+    training_set12, validation_set12, test_set12 = torch.utils.data.random_split(dataset12, [.7, .1, .2],
+                                                                                 generator=torch.Generator().manual_seed(
+                                                                                     42))
+    dataset4 = Dataset(X_class4, y_class4)
+    training_set4, test_set4 = torch.utils.data.random_split(dataset4, [.01, .99],
+                                                             generator=torch.Generator().manual_seed(42))
+
+    return training_set12, validation_set12, test_set12, training_set4, test_set4
+
 
 def train_test_split_basic_classifier():
     X, y = get_image_tensors_array()
@@ -100,5 +105,6 @@ def train_test_split_basic_classifier():
     for i in range(len(y)):
         yy.append(label_to_index[y[i][0] + " " + y[i][1]])
     dataset = Dataset(X, yy)
-    training_set, validation_set, test_set = torch.utils.data.random_split(dataset, [.7, .1, .2], generator=torch.Generator().manual_seed(42))
+    training_set, validation_set, test_set = torch.utils.data.random_split(dataset, [.7, .1, .2],
+                                                                           generator=torch.Generator().manual_seed(42))
     return training_set, validation_set, test_set
