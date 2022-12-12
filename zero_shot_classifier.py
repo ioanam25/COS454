@@ -138,7 +138,7 @@ def testing():
 
 if __name__ == '__main__':
     model = ZeroShotNet()
-    _, _, _, training_set, test_set = preprocess_data.train_test_split_12class_4class()
+    training_set12, validation_set12, test_set12, training_set4, test_set4 = preprocess_data.train_test_split_12class_4class_zero_shot()
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print(device)
@@ -146,8 +146,8 @@ if __name__ == '__main__':
     # torch.cuda.set_device(device)
     model.to(device)
 
-    training_loader = torch.utils.data.DataLoader(training_set, batch_size=1, shuffle=True, num_workers=0)
-    test_loader = torch.utils.data.DataLoader(test_set)
+    training_loader = torch.utils.data.DataLoader(training_set12, batch_size=1, shuffle=True, num_workers=0)
+    test_loader = torch.utils.data.DataLoader(test_set4)
 
     training()
 

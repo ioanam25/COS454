@@ -35,16 +35,13 @@ class Net12(nn.Module):
         self.encoder = torch.hub.load('pytorch/vision:v0.2.2', 'resnet18', pretrained=False)
         # Set up network layers
         self.D_pre = 1000 # output of resnet
-        self.cs_enc = nn.Linear(self.D_pre, 12)
+        self.fc = nn.Linear(self.D_pre, 12)
 
     # Forward pass
     def forward(self, x):
         z_pre = self.encoder(x)  # shape: [N, D_pre]
-        z_cs = self.cs_enc(z_pre)
+        z_cs = self.fc(z_pre)
         return z_cs
-
-
-class Net4(nn.Module)
 
 
 def train_one_epoch(epoch_index, tb_writer, optimizer, loss_fn):
@@ -95,6 +92,18 @@ def training():
     loss_fn = torch.nn.CrossEntropyLoss().to(device)
     optimizer = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
 
+    if curr_model == 4:
+        params = []
+        for child in list(model.children())[:-1]:
+            params.extend(list(child.parameters()))
+
+        param_groups = [
+            {'params': model.parameters(), 'lr': .01},
+            {'params': params, 'lr': .001},
+        ]
+        optimizer = torch.optim.SGD(param_groups, lr=0.01, momentum=0.9)
+        # optimizer = Adam(param_groups)
+
     for epoch in range(EPOCHS):
         print('EPOCH {}:'.format(epoch_number + 1))
 
@@ -116,6 +125,7 @@ def training():
 
 def testing():
     correct_pred = 0
+    print(len(test_loader))
     for i, data in enumerate(test_loader):
         # Every data instance is an input + label pair
         inputs, labels = data
@@ -133,8 +143,9 @@ def testing():
 
 
 if __name__ == '__main__':
-    model = ZeroShotNet()
-    _, _, _, training_set, test_set = preprocess_data.train_test_split_12class_4class()
+    curr_model = 12
+    model = Net12()
+    training_set12, validation_set12, test_set12, training_set4, test_set4 = preprocess_data.train_test_split_12class_4class_few_shot()
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print(device)
@@ -142,12 +153,26 @@ if __name__ == '__main__':
     # torch.cuda.set_device(device)
     model.to(device)
 
-    training_loader = torch.utils.data.DataLoader(training_set, batch_size=1, shuffle=True, num_workers=0)
-    test_loader = torch.utils.data.DataLoader(test_set)
+    training_loader = torch.utils.data.DataLoader(training_set12, batch_size=1, shuffle=True, num_workers=0)
+    test_loader = torch.utils.data.DataLoader(test_set12)
+
+    # training()
+    # print(testing())
+
+    # for param in model.parameters():
+    #     param.requires_grad = False
+        # Replace the last fully-connected layer
+        # Parameters of newly constructed modules have requires_grad=True by default
+    # model.fc = nn.Linear(1000, 4)  # assuming that the fc7 layer has 512 neurons, otherwise change it
+    model.to(device)
+
+    curr_model = 4
+    training_loader = torch.utils.data.DataLoader(training_set4, batch_size=1, shuffle=True, num_workers=0)
+    test_loader = torch.utils.data.DataLoader(test_set4)
 
     training()
-
     print(testing())
+
 
     PATH = "trained_model_basic_classifier.pt"
     torch.save(model.state_dict(), PATH)

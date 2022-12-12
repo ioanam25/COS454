@@ -17,16 +17,17 @@ label_to_index = {
     "red star": 3,
     "yellow circle": 4,
     "yellow square": 5,
-    "yellow triangle": 6,
-    "yellow star": 7,
-    "green circle": 8,
-    "green square": 9,
-    "green triangle": 10,
-    "green star": 11,
-    "blue circle": 12,
-    "blue square": 13,
-    "blue triangle": 14,
-    "blue star": 15,
+    "green circle": 6,
+    "green square": 7,
+    "blue circle": 8,
+    "blue square": 9,
+    "blue triangle": 10,
+    "blue star": 11,
+
+    "yellow triangle": 12,
+    "yellow star": 13,
+    "green triangle": 14,
+    "green star": 15,
 }
 
 
@@ -66,7 +67,7 @@ def get_image_tensors_array():
     return X, y
 
 
-def train_test_split_12class_4class():
+def train_test_split_12class_4class_zero_shot():
     X, y = get_image_tensors_array()
     class4_idx = []
     class12_idx = []
@@ -87,6 +88,39 @@ def train_test_split_12class_4class():
     for i in range(len(class4_idx)):
         X_class4.append(X[class4_idx[i]])
         y_class4.append(label_to_index[y[class4_idx[i]][0] + " " + y[class4_idx[i]][1]])
+
+    dataset12 = Dataset(X_class12, y_class12)
+    training_set12, validation_set12, test_set12 = torch.utils.data.random_split(dataset12, [.7, .1, .2],
+                                                                                 generator=torch.Generator().manual_seed(
+                                                                                     42))
+    dataset4 = Dataset(X_class4, y_class4)
+    training_set4, test_set4 = torch.utils.data.random_split(dataset4, [.01, .99],
+                                                             generator=torch.Generator().manual_seed(42))
+
+    return training_set12, validation_set12, test_set12, training_set4, test_set4
+
+
+def train_test_split_12class_4class_few_shot():
+    X, y = get_image_tensors_array()
+    class4_idx = []
+    class12_idx = []
+    for index, image in enumerate(X):
+        if y[index][0] in ["green", "yellow"] and y[index][1] in ["triangle", "star"]:
+            class4_idx.append(index)
+        else:
+            class12_idx.append(index)
+
+    X_class12 = []
+    y_class12 = []
+    X_class4 = []
+    y_class4 = []
+    for i in range(len(class12_idx)):
+        X_class12.append(X[class12_idx[i]])
+        y_class12.append(label_to_index[y[class12_idx[i]][0] + " " + y[class12_idx[i]][1]])
+
+    for i in range(len(class4_idx)):
+        X_class4.append(X[class4_idx[i]])
+        y_class4.append(label_to_index[y[class4_idx[i]][0] + " " + y[class4_idx[i]][1]] - 12)
 
     dataset12 = Dataset(X_class12, y_class12)
     training_set12, validation_set12, test_set12 = torch.utils.data.random_split(dataset12, [.7, .1, .2],
