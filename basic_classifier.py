@@ -10,6 +10,7 @@ import os
 import pandas as pd
 from torch.utils.data import Dataset, DataLoader
 import preprocess_data
+from sklearn.metrics import confusion_matrix
 
 class Flatten(nn.Module):
     def __init__(self):
@@ -137,6 +138,31 @@ def training():
     f.flush()
 
 
+def testing():
+    correct_pred = 0
+    y_true = []
+    y_pred = []
+    print(len(test_loader))
+    for i, data in enumerate(test_loader):
+        # Every data instance is an input + label pair
+        inputs, labels = data
+        inputs = inputs.to(device)
+        labels = labels.to(device)
+
+        m = nn.Softmax(dim=1)
+        output = m(model(inputs))
+        # print(torch.argmax(output[0]), labels[0])
+        y_true.append(labels[0].item())
+        y_pred.append(torch.argmax(output[0]))
+        if torch.argmax(output[0]) == labels[0]:
+            correct_pred += 1
+
+    conf_matrix = confusion_matrix(y_true, y_pred)
+    print(conf_matrix)
+    print(correct_pred, len(test_loader))
+    return correct_pred / len(test_loader),
+
+
 if __name__ == '__main__':
     f = open("basic_output", "w")
     model = BasicNet()
@@ -153,7 +179,10 @@ if __name__ == '__main__':
 
     training_loader = torch.utils.data.DataLoader(training_set, batch_size=2, shuffle=True, num_workers=0)
     validation_loader = torch.utils.data.DataLoader(validation_set, batch_size=2, shuffle=True, num_workers=0)
+    test_loader = torch.utils.data.DataLoader(test_set)
 
     # training()
     PATH = "models/model_20221215_161913_22"
     model.load_state_dict(torch.load(PATH))
+
+    print(testing())
