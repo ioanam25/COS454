@@ -154,4 +154,6 @@ if __name__ == '__main__':
     training_loader = torch.utils.data.DataLoader(training_set, batch_size=2, shuffle=True, num_workers=0)
     validation_loader = torch.utils.data.DataLoader(validation_set, batch_size=2, shuffle=True, num_workers=0)
 
-    training()
+    # training()
+    PATH = "models/model_20221215_161913_22"
+    model.load_state_dict(torch.load(PATH))

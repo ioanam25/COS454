@@ -179,7 +179,7 @@ if __name__ == '__main__':
     model.to(device)
 
     training_loader = torch.utils.data.DataLoader(training_set12, batch_size=1, shuffle=True, num_workers=0)
-    validation_loader = torch.utils.data.DataLoader(validation_set12, batch_size=2, shuffle=True, num_workers=0)
+    validation_loader = torch.utils.data.DataLoader(validation_set12, batch_size=1, shuffle=True, num_workers=0)
     test_loader = torch.utils.data.DataLoader(test_set4)
 
     training()
