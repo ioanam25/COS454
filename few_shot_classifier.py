@@ -44,7 +44,7 @@ class Net12(nn.Module):
         return z_cs
 
 
-def train_one_epoch(epoch_index, tb_writer, optimizer, loss_fn):
+def train_one_epoch(epoch_index, tb_writer, optimizer, loss_fn, training_loader):
     running_loss = 0.
     last_loss = 0.
 
@@ -72,7 +72,7 @@ def train_one_epoch(epoch_index, tb_writer, optimizer, loss_fn):
 
         # Gather data and report
         running_loss += loss.item()
-        if i <= 10 or i % 10 == 9:
+        if i<=10 or i % 50 == 49:
             last_loss = running_loss / 10  # loss per batch
             print('  batch {} loss: {}'.format(i + 1, last_loss))
             tb_x = epoch_index * len(training_loader) + i + 1
@@ -82,13 +82,25 @@ def train_one_epoch(epoch_index, tb_writer, optimizer, loss_fn):
     return last_loss
 
 
-def training():
+def training(training_loader):
+    print("model:" + str(curr_model))
     # Initializing in a separate cell so we can easily add more epochs to the same run
+    PATH12 = "models/few_model_12_{}_{}"
+    PATH4 = "models/few_model_4_{}_{}"
+
+    if curr_model == 12:
+        PATH = PATH12
+    else:
+        PATH = PATH4
+
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     writer = SummaryWriter('runs/fashion_trainer_{}'.format(timestamp))
     epoch_number = 0
 
-    EPOCHS = 1
+    best_vloss = 1_000_000.
+    no_improve = 0
+
+    EPOCHS = 100
     loss_fn = torch.nn.CrossEntropyLoss().to(device)
     optimizer = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
 
@@ -101,25 +113,53 @@ def training():
             {'params': model.parameters(), 'lr': .01},
             {'params': params, 'lr': .001},
         ]
-        optimizer = torch.optim.SGD(param_groups, lr=0.01, momentum=0.9)
+        optimizer = torch.optim.SGD(param_groups, momentum=0.9)
         # optimizer = Adam(param_groups)
 
     for epoch in range(EPOCHS):
         print('EPOCH {}:'.format(epoch_number + 1))
+        print('EPOCH {}:'.format(epoch_number + 1), file=f)
 
         # Make sure gradient tracking is on, and do a pass over the data
         model.train(True)
-        avg_loss = train_one_epoch(epoch_number, writer, optimizer, loss_fn)
+        avg_loss = train_one_epoch(epoch_number, writer, optimizer, loss_fn, training_loader)
 
         # We don't need gradients on to do reporting
         model.train(False)
 
-        # Log the running loss averaged per batch
-        # for both training and validation
-        writer.add_scalars('Training Loss',
-                           {'Training': avg_loss},
-                           epoch_number + 1)
-        writer.flush()
+        if curr_model == 12:
+            running_vloss = 0.0
+            for i, vdata in enumerate(validation_loader):
+                vinputs, vlabels = vdata
+                vinputs = vinputs.to(device)
+                vlabels = vlabels.to(device)
+                voutputs = model(vinputs)
+                vloss = loss_fn(voutputs, vlabels)
+                running_vloss += vloss
+
+            avg_vloss = running_vloss / (i + 1)
+            print('LOSS train {} valid {}'.format(avg_loss, avg_vloss))
+            print('LOSS train {} valid {}'.format(avg_loss, avg_vloss), file=f)
+
+            # Log the running loss averaged per batch
+            # for both training and validation
+            writer.add_scalars('Training vs. Validation Loss',
+                               {'Training': avg_loss, 'Validation': avg_vloss},
+                               epoch_number + 1)
+            writer.flush()
+
+            # Track best performance, and save the model's state
+            if avg_vloss < best_vloss:
+                no_improve = 0
+                best_vloss = avg_vloss
+                model_path = PATH.format(timestamp, epoch_number)
+                torch.save(model.state_dict(), model_path)
+            else:
+                no_improve += 1
+                if no_improve > 8:
+                    model_path = PATH.format(timestamp, epoch_number)
+                    torch.save(model.state_dict(), model_path)
+                    break
 
         epoch_number += 1
 
@@ -143,20 +183,24 @@ def testing():
 
 
 if __name__ == '__main__':
+    f = open("few_output", "w")
     curr_model = 12
     model = Net12()
     training_set12, validation_set12, test_set12, training_set4, test_set4 = preprocess_data.train_test_split_12class_4class_few_shot()
 
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    #device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cpu")
     print(device)
-    model = nn.DataParallel(model)
+    print(device, file=f)
+    #model = nn.DataParallel(model)
     # torch.cuda.set_device(device)
     model.to(device)
 
-    training_loader = torch.utils.data.DataLoader(training_set12, batch_size=1, shuffle=True, num_workers=0)
+    training_loader12 = torch.utils.data.DataLoader(training_set12, batch_size=1, shuffle=True, num_workers=0)
+    validation_loader = torch.utils.data.DataLoader(validation_set12, batch_size=1, shuffle=True, num_workers=0)
     test_loader = torch.utils.data.DataLoader(test_set12)
 
-    # training()
+    training(training_loader12)
     # print(testing())
 
     # for param in model.parameters():
@@ -167,12 +211,9 @@ if __name__ == '__main__':
     model.to(device)
 
     curr_model = 4
-    training_loader = torch.utils.data.DataLoader(training_set4, batch_size=1, shuffle=True, num_workers=0)
+    training_loader4 = torch.utils.data.DataLoader(training_set4, batch_size=1, shuffle=True, num_workers=0)
     test_loader = torch.utils.data.DataLoader(test_set4)
 
-    training()
-    print(testing())
+    training(training_loader4)
+    #print(testing())
 
-
-    PATH = "trained_model_basic_classifier.pt"
-    torch.save(model.state_dict(), PATH)
