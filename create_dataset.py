@@ -8,7 +8,7 @@ shapes = ["circle", "square", "triangle", "star"]
 colors = ["red", "blue", "green", "yellow"]
 image_info = {}
 
-N = 250
+N = 625
 
 def get_bgr(color):
     if color == "red":

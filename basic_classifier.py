@@ -61,7 +61,7 @@ def train_one_epoch(epoch_index, tb_writer, optimizer, loss_fn):
 
         # Gather data and report
         running_loss += loss.item()
-        if i<=10 or i % 10 == 9:
+        if i<=10 or i % 50 == 49:
             last_loss = running_loss / 10  # loss per batch
             print('  batch {} loss: {}'.format(i + 1, last_loss))
             tb_x = epoch_index * len(training_loader) + i + 1
@@ -72,7 +72,6 @@ def train_one_epoch(epoch_index, tb_writer, optimizer, loss_fn):
 
 
 def training():
-    PATH = "trained_model_basic_classifier.pt"
 
     # Initializing in a separate cell so we can easily add more epochs to the same run
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -88,6 +87,7 @@ def training():
 
     for epoch in range(EPOCHS):
         print('EPOCH {}:'.format(epoch_number + 1))
+        print('EPOCH {}:'.format(epoch_number + 1), file=f)
 
         # Make sure gradient tracking is on, and do a pass over the data
         model.train(True)
@@ -107,6 +107,7 @@ def training():
 
         avg_vloss = running_vloss / (i + 1)
         print('LOSS train {} valid {}'.format(avg_loss, avg_vloss))
+        print('LOSS train {} valid {}'.format(avg_loss, avg_vloss), file=f)
 
         # Log the running loss averaged per batch
         # for both training and validation
@@ -119,27 +120,32 @@ def training():
         if avg_vloss < best_vloss:
             no_improve = 0
             best_vloss = avg_vloss
-            model_path = 'model_{}_{}'.format(timestamp, epoch_number)
+            best_epoch = epoch
+            model_path = 'models/model_{}_{}'.format(timestamp, epoch_number)
             torch.save(model.state_dict(), model_path)
         else:
             no_improve+=1
             if no_improve > 8:
-                torch.save(model.state_dict(), PATH)
                 break
 
 
         epoch_number += 1
-        if epoch % 5 == 0:
-            torch.save(model.state_dict(), PATH)
+    print("best_vloss: " + best_vloss)
+    print("best_vloss: " + best_vloss, file=f)
+    print("best_epoch: " + best_epoch)
+    print("best_epoch: " + best_epoch, file=f)
+    f.flush()
 
 
 if __name__ == '__main__':
+    f = open("basic_output", "w")
     model = BasicNet()
     training_set, validation_set, test_set = preprocess_data.train_test_split_basic_classifier()
 
     #device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     device = torch.device("cpu")
     print(device)
+    print(device, file=f)
     #model = nn.DataParallel(model)
     #torch.cuda.set_device(device)
     #model.cuda(device)

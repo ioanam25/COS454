@@ -95,7 +95,6 @@ def training(training_loader):
 
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     writer = SummaryWriter('runs/fashion_trainer_{}'.format(timestamp))
-    epoch_number = 0
 
     best_vloss = 1_000_000.
     no_improve = 0
@@ -110,19 +109,20 @@ def training(training_loader):
             params.extend(list(child.parameters()))
 
         param_groups = [
-            {'params': model.parameters(), 'lr': .01},
+            {'params': model.fc.parameters(), 'lr': .01},
             {'params': params, 'lr': .001},
         ]
         optimizer = torch.optim.SGD(param_groups, momentum=0.9)
         # optimizer = Adam(param_groups)
 
+    best_path = ' '
     for epoch in range(EPOCHS):
-        print('EPOCH {}:'.format(epoch_number + 1))
-        print('EPOCH {}:'.format(epoch_number + 1), file=f)
+        print('EPOCH {}:'.format(epoch + 1))
+        print('EPOCH {}:'.format(epoch + 1), file=f)
 
         # Make sure gradient tracking is on, and do a pass over the data
         model.train(True)
-        avg_loss = train_one_epoch(epoch_number, writer, optimizer, loss_fn, training_loader)
+        avg_loss = train_one_epoch(epoch, writer, optimizer, loss_fn, training_loader)
 
         # We don't need gradients on to do reporting
         model.train(False)
@@ -145,23 +145,23 @@ def training(training_loader):
             # for both training and validation
             writer.add_scalars('Training vs. Validation Loss',
                                {'Training': avg_loss, 'Validation': avg_vloss},
-                               epoch_number + 1)
+                               epoch + 1)
             writer.flush()
 
             # Track best performance, and save the model's state
             if avg_vloss < best_vloss:
                 no_improve = 0
                 best_vloss = avg_vloss
-                model_path = PATH.format(timestamp, epoch_number)
+                model_path = PATH.format(timestamp, epoch)
+                best_path = model_path
                 torch.save(model.state_dict(), model_path)
             else:
                 no_improve += 1
                 if no_improve > 8:
-                    model_path = PATH.format(timestamp, epoch_number)
+                    model_path = PATH.format(timestamp, epoch)
                     torch.save(model.state_dict(), model_path)
                     break
-
-        epoch_number += 1
+    return best_path
 
 def testing():
     correct_pred = 0
@@ -200,14 +200,15 @@ if __name__ == '__main__':
     validation_loader = torch.utils.data.DataLoader(validation_set12, batch_size=1, shuffle=True, num_workers=0)
     test_loader = torch.utils.data.DataLoader(test_set12)
 
-    training(training_loader12)
+    best_path = training(training_loader12)
     # print(testing())
 
     # for param in model.parameters():
     #     param.requires_grad = False
         # Replace the last fully-connected layer
         # Parameters of newly constructed modules have requires_grad=True by default
-    # model.fc = nn.Linear(1000, 4)  # assuming that the fc7 layer has 512 neurons, otherwise change it
+    model.load_state_dict(torch.load(best_path))
+    model.fc = nn.Linear(1000, 4)  # assuming that the fc7 layer has 512 neurons, otherwise change it
     model.to(device)
 
     curr_model = 4
