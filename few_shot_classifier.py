@@ -10,6 +10,7 @@ import os
 import pandas as pd
 from torch.utils.data import Dataset, DataLoader
 import preprocess_data
+from sklearn.metrics import confusion_matrix
 
 
 class Flatten(nn.Module):
@@ -161,10 +162,15 @@ def training(training_loader):
                     model_path = PATH.format(timestamp, epoch)
                     torch.save(model.state_dict(), model_path)
                     break
+        else:
+            model_path = PATH.format(timestamp, epoch)
+            torch.save(model.state_dict(), model_path)
     return best_path
 
-def testing():
+def testing(test_loader):
     correct_pred = 0
+    y_true = []
+    y_pred = []
     print(len(test_loader))
     for i, data in enumerate(test_loader):
         # Every data instance is an input + label pair
@@ -174,12 +180,16 @@ def testing():
 
         m = nn.Softmax(dim=1)
         output = m(model(inputs))
-        print(torch.argmax(output[0]), labels[0])
+        # print(torch.argmax(output[0]), labels[0])
+        y_true.append(labels[0].item())
+        y_pred.append(torch.argmax(output[0]))
         if torch.argmax(output[0]) == labels[0]:
             correct_pred += 1
 
+    conf_matrix = confusion_matrix(y_true, y_pred)
+    print(conf_matrix)
     print(correct_pred, len(test_loader))
-    return correct_pred / len(test_loader)
+    return correct_pred / len(test_loader),
 
 
 if __name__ == '__main__':
@@ -198,23 +208,29 @@ if __name__ == '__main__':
 
     training_loader12 = torch.utils.data.DataLoader(training_set12, batch_size=1, shuffle=True, num_workers=0)
     validation_loader = torch.utils.data.DataLoader(validation_set12, batch_size=1, shuffle=True, num_workers=0)
-    test_loader = torch.utils.data.DataLoader(test_set12)
+    test_loader12 = torch.utils.data.DataLoader(test_set12)
 
-    best_path = training(training_loader12)
+    # best_path = training(training_loader12)
     # print(testing())
 
     # for param in model.parameters():
     #     param.requires_grad = False
         # Replace the last fully-connected layer
         # Parameters of newly constructed modules have requires_grad=True by default
-    model.load_state_dict(torch.load(best_path))
+    # path = "/home/ian/Code/COS454/models/few_model_12_20221215_234339_22"
+    # model.load_state_dict(torch.load(path))
+
+
+
     model.fc = nn.Linear(1000, 4)  # assuming that the fc7 layer has 512 neurons, otherwise change it
     model.to(device)
 
     curr_model = 4
-    training_loader4 = torch.utils.data.DataLoader(training_set4, batch_size=1, shuffle=True, num_workers=0)
-    test_loader = torch.utils.data.DataLoader(test_set4)
+    training_loader4 = torch.utils.data.DataLoader(training_set4, batch_size=2, shuffle=True, num_workers=0)
+    test_loader4 = torch.utils.data.DataLoader(test_set4)
 
-    training(training_loader4)
-    #print(testing())
+   #  training(training_loader4)
+    path = "/home/ian/Code/COS454/models/few_model_4_20221216_142725_99"
+    model.load_state_dict(torch.load(path))
+    print(testing(test_loader4))
 

@@ -23,7 +23,7 @@ class Flatten(nn.Module):
 class ZeroShotNet(nn.Module):
     def __init__(self):
         super(ZeroShotNet, self).__init__()
-        self.N = 2      # N: number of examples in batch
+        self.N = 1      # N: number of examples in batch
         self.C = 3       # C: number of channels
         self.H = 224     # H: image height in pixels
         self.W = 224     # W: image width in pixels
@@ -139,21 +139,17 @@ def training():
             no_improve = 0
             best_vloss = avg_vloss
             best_epoch = epoch
-            # model_path = 'models/zero_model_{}_{}'.format(timestamp, epoch)
-            # torch.save(model.state_dict(), model_path)
-        # else:
-        #     no_improve+=1
-        #     if no_improve > 8:
-        #         break
-        model_path = 'models/zero_model_{}_{}'.format(timestamp, epoch)
-        torch.save(model.state_dict(), model_path)
-        f.flush()
+            model_path = 'models/zero_model_{}_{}'.format(timestamp, epoch)
+            torch.save(model.state_dict(), model_path)
+        else:
+            no_improve+=1
+            if no_improve > 8:
+                break
 
-
-    print("best_vloss: " + str(best_vloss))
-    print("best_vloss: " + str(best_vloss), file=f)
-    print("best_epoch: " + str(best_epoch))
-    print("best_epoch: " + str(best_epoch), file=f)
+    print("best_vloss: " + best_vloss)
+    print("best_vloss: " + best_vloss, file=f)
+    print("best_epoch: " + best_epoch)
+    print("best_epoch: " + best_epoch, file=f)
     f.flush()
 
 def testing():
@@ -175,7 +171,7 @@ def testing():
 
 
 if __name__ == '__main__':
-    f = open("zero_output2", "w")
+    f = open("zero_output", "w")
     model = ZeroShotNet()
     training_set12, validation_set12, test_set12, training_set4, test_set4 = preprocess_data.train_test_split_12class_4class_zero_shot()
 
@@ -186,12 +182,9 @@ if __name__ == '__main__':
     # torch.cuda.set_device(device)
     model.to(device)
 
-    training_loader = torch.utils.data.DataLoader(training_set12, batch_size=2, shuffle=True, num_workers=0)
-    validation_loader = torch.utils.data.DataLoader(validation_set12, batch_size=2, shuffle=True, num_workers=0)
+    training_loader = torch.utils.data.DataLoader(training_set12, batch_size=1, shuffle=True, num_workers=0)
+    validation_loader = torch.utils.data.DataLoader(validation_set12, batch_size=1, shuffle=True, num_workers=0)
     test_loader = torch.utils.data.DataLoader(test_set12)
-    
-    path = "/home/ian/Code/COS454/models/zero_model_20221216_144558_9"
-    model.load_state_dict(torch.load(path))
 
     training()
 
