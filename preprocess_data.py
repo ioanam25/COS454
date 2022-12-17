@@ -11,23 +11,40 @@ from torch.utils.data import Dataset, DataLoader
 import torch.utils
 
 label_to_index = {
+    # "red circle": 0,
+    # "red square": 1,
+    # "red triangle": 2,
+    # "red star": 3,
+    # "yellow circle": 4,
+    # "yellow square": 5,
+    # "green circle": 6,
+    # "green square": 7,
+    # "blue circle": 8,
+    # "blue square": 9,
+    # "blue triangle": 10,
+    # "blue star": 11,
+    #
+    # "yellow triangle": 12,
+    # "yellow star": 13,
+    # "green triangle": 14,
+    # "green star": 15,
+
     "red circle": 0,
     "red square": 1,
     "red triangle": 2,
     "red star": 3,
     "yellow circle": 4,
     "yellow square": 5,
-    "green circle": 6,
-    "green square": 7,
-    "blue circle": 8,
-    "blue square": 9,
-    "blue triangle": 10,
-    "blue star": 11,
-
-    "yellow triangle": 12,
-    "yellow star": 13,
-    "green triangle": 14,
-    "green star": 15,
+    "yellow triangle": 6,  # test
+    "yellow star": 7, # test
+    "green circle": 8,
+    "green square": 9,
+    "green triangle": 10, # test
+    "green star": 11, #test
+    "blue circle": 12,
+    "blue square": 13,
+    "blue triangle": 14,
+    "blue star": 15,
 }
 
 

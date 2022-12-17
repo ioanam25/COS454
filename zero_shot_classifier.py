@@ -10,7 +10,7 @@ import os
 import pandas as pd
 from torch.utils.data import Dataset, DataLoader
 import preprocess_data
-
+from sklearn.metrics import confusion_matrix
 
 class Flatten(nn.Module):
     def __init__(self):
@@ -156,8 +156,11 @@ def training():
     print("best_epoch: " + str(best_epoch), file=f)
     f.flush()
 
-def testing():
+def testing(test_loader):
     correct_pred = 0
+    y_true = []
+    y_pred = []
+    print(len(test_loader))
     for i, data in enumerate(test_loader):
         # Every data instance is an input + label pair
         inputs, labels = data
@@ -166,12 +169,16 @@ def testing():
 
         m = nn.Softmax(dim=1)
         output = m(model(inputs))
-        print(torch.argmax(output[0]), labels[0])
+        # print(torch.argmax(output[0]), labels[0])
+        y_true.append(labels[0].item())
+        y_pred.append(torch.argmax(output[0]))
         if torch.argmax(output[0]) == labels[0]:
             correct_pred += 1
 
+    conf_matrix = confusion_matrix(y_true, y_pred)
+    print(conf_matrix)
     print(correct_pred, len(test_loader))
-    return correct_pred / len(test_loader)
+    return correct_pred / len(test_loader),
 
 
 if __name__ == '__main__':
@@ -188,11 +195,31 @@ if __name__ == '__main__':
 
     training_loader = torch.utils.data.DataLoader(training_set12, batch_size=2, shuffle=True, num_workers=0)
     validation_loader = torch.utils.data.DataLoader(validation_set12, batch_size=2, shuffle=True, num_workers=0)
-    test_loader = torch.utils.data.DataLoader(test_set12)
-    
-    path = "/home/ian/Code/COS454/models/zero_model_20221216_144558_9"
-    model.load_state_dict(torch.load(path))
+    test_loader12 = torch.utils.data.DataLoader(test_set12)
+    test_loader4 = torch.utils.data.DataLoader(test_set4)
+    #
+    # path = "models/zero_model_20221216_160055_29"
+    # model.load_state_dict(torch.load(path))
+
+
+
 
     training()
 
-    #print(testing())
+    # print(testing(test_loader12))
+    # print(testing(test_loader4))
+
+    # print(len(training_loader))
+    # fq = {}
+    # for i, data in enumerate(training_loader):
+    #     # Every data instance is an input + label pair
+    #     inputs, labels = data
+    #     inputs = inputs.to(device)
+    #     labels = labels.to(device)
+    #
+    #     if labels[0].item() not in fq.keys():
+    #         fq[labels[0].item()] = 0
+    #     fq[labels[0].item()] += 1
+    #
+    # for key, val in fq.items():
+    #     print(key, val)
