@@ -89,7 +89,7 @@ def train_test_split_12class_4class_zero_shot():
     class4_idx = []
     class12_idx = []
     for index, image in enumerate(X):
-        if y[index] in [['red', 'circle'], ['yellow, square'], ['green', 'triangle'], ['blue', 'star']]:
+        if y[index] in [['red', 'circle'], ['yellow', 'square'], ['green', 'triangle'], ['blue', 'star']]:
             print(y[index])
             class4_idx.append(index)
         else:

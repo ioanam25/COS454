@@ -184,7 +184,7 @@ def testing(test_loader):
 
 
 if __name__ == '__main__':
-    f = open("zero_output2", "w")
+    f = open("zero_output3", "w")
     model = ZeroShotNet()
     training_set12, validation_set12, test_set12, training_set4, test_set4 = preprocess_data.train_test_split_12class_4class_zero_shot()
     print(len(training_set12), len(validation_set12), len(test_set12), len(training_set4), len(test_set4))
@@ -200,16 +200,16 @@ if __name__ == '__main__':
     test_loader12 = torch.utils.data.DataLoader(test_set12)
     test_loader4 = torch.utils.data.DataLoader(test_set4)
     #
-    path = "models/zero_model_20221217_010931_17"
-    model.load_state_dict(torch.load(path))
+    # path = "models/zero_model_20221217_010931_17"
+    # model.load_state_dict(torch.load(path))
 
 
 
 
-    # training()
+    training()
 
-    print(testing(test_loader12))
-    print(testing(test_loader4))
+    # print(testing(test_loader12))
+    # print(testing(test_loader4))
 
     # print(len(training_loader))
     # fq = {}
