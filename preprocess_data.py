@@ -29,22 +29,22 @@ label_to_index = {
     # "green triangle": 14,
     # "green star": 15,
 
-    "red circle": 0,
+    "red circle": 0, # test
     "red square": 1,
     "red triangle": 2,
     "red star": 3,
     "yellow circle": 4,
-    "yellow square": 5,
-    "yellow triangle": 6,  # test
-    "yellow star": 7, # test
+    "yellow square": 5, # test
+    "yellow triangle": 6,
+    "yellow star": 7,
     "green circle": 8,
     "green square": 9,
     "green triangle": 10, # test
-    "green star": 11, #test
+    "green star": 11,
     "blue circle": 12,
     "blue square": 13,
     "blue triangle": 14,
-    "blue star": 15,
+    "blue star": 15, # test
 }
 
 
@@ -89,7 +89,8 @@ def train_test_split_12class_4class_zero_shot():
     class4_idx = []
     class12_idx = []
     for index, image in enumerate(X):
-        if y[index][0] in ["green", "yellow"] and y[index][1] in ["triangle", "star"]:
+        if y[index] in [['red', 'circle'], ['yellow, square'], ['green', 'triangle'], ['blue', 'star']]:
+            print(y[index])
             class4_idx.append(index)
         else:
             class12_idx.append(index)

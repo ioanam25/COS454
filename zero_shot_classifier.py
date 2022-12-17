@@ -23,7 +23,7 @@ class Flatten(nn.Module):
 class ZeroShotNet(nn.Module):
     def __init__(self):
         super(ZeroShotNet, self).__init__()
-        self.N = 2      # N: number of examples in batch
+        self.N = 1      # N: number of examples in batch
         self.C = 3       # C: number of channels
         self.H = 224     # H: image height in pixels
         self.W = 224     # W: image width in pixels
@@ -171,10 +171,12 @@ def testing(test_loader):
         output = m(model(inputs))
         # print(torch.argmax(output[0]), labels[0])
         y_true.append(labels[0].item())
-        y_pred.append(torch.argmax(output[0]))
+        y_pred.append(torch.argmax(output[0]).item())
         if torch.argmax(output[0]) == labels[0]:
             correct_pred += 1
 
+    print(set(y_true))
+    print(set(y_pred))
     conf_matrix = confusion_matrix(y_true, y_pred)
     print(conf_matrix)
     print(correct_pred, len(test_loader))
@@ -185,7 +187,7 @@ if __name__ == '__main__':
     f = open("zero_output2", "w")
     model = ZeroShotNet()
     training_set12, validation_set12, test_set12, training_set4, test_set4 = preprocess_data.train_test_split_12class_4class_zero_shot()
-
+    print(len(training_set12), len(validation_set12), len(test_set12), len(training_set4), len(test_set4))
     #device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     device = torch.device("cpu")
     print(device)
@@ -193,21 +195,21 @@ if __name__ == '__main__':
     # torch.cuda.set_device(device)
     model.to(device)
 
-    training_loader = torch.utils.data.DataLoader(training_set12, batch_size=2, shuffle=True, num_workers=0)
-    validation_loader = torch.utils.data.DataLoader(validation_set12, batch_size=2, shuffle=True, num_workers=0)
+    training_loader = torch.utils.data.DataLoader(training_set12, batch_size=1, shuffle=True, num_workers=0)
+    validation_loader = torch.utils.data.DataLoader(validation_set12, batch_size=1, shuffle=True, num_workers=0)
     test_loader12 = torch.utils.data.DataLoader(test_set12)
     test_loader4 = torch.utils.data.DataLoader(test_set4)
     #
-    # path = "models/zero_model_20221216_160055_29"
-    # model.load_state_dict(torch.load(path))
+    path = "models/zero_model_20221217_010931_17"
+    model.load_state_dict(torch.load(path))
 
 
 
 
-    training()
+    # training()
 
-    # print(testing(test_loader12))
-    # print(testing(test_loader4))
+    print(testing(test_loader12))
+    print(testing(test_loader4))
 
     # print(len(training_loader))
     # fq = {}
